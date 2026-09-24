@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lichess Daily Activity</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 20px;
+        background: #0d1117;
+        color: #fff;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+                     "Segoe UI", sans-serif;
+    }
+
+    .lichess-widget {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 20px;
+        border-radius: 22px;
+        background:
+            linear-gradient(
+                145deg,
+                rgba(255,255,255,.08),
+                rgba(255,255,255,.025)
+            );
+        border: 1px solid rgba(255,255,255,.09);
+        box-shadow: 0 20px 50px rgba(0,0,0,.35);
+        backdrop-filter: blur(16px);
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #3b82f6;
+        font-weight: 800;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .username {
+        font-size: 16px;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .date {
+        margin-top: 3px;
+        color: rgba(255,255,255,.55);
+        font-size: 12px;
+    }
+
+    .live {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: rgba(255,255,255,.65);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .08em;
+    }
+
+    .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 10px #22c55e;
+    }
+
+    /* MODE SWITCHER */
+
+    .modes {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        padding: 4px;
+        margin-bottom: 18px;
+        border-radius: 12px;
+        background: rgba(255,255,255,.045);
+    }
+
+    .mode {
+        border: 0;
+        border-radius: 9px;
+        padding: 9px 4px;
+        color: rgba(255,255,255,.5);
+        background: transparent;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+        transition: .2s ease;
+    }
+
+    .mode:hover {
+        color: #fff;
+    }
+
+    .mode.active {
+        color: #fff;
+        background: rgba(255,255,255,.10);
+    }
+
+    /* STATS */
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .stat {
+        padding: 13px 8px;
+        text-align: center;
+        border-radius: 13px;
+        background: rgba(255,255,255,.045);
+    }
+
+    .stat-value {
+        font-size: 21px;
+        line-height: 1;
+        font-weight: 900;
+    }
+
+    .stat-label {
+        margin-top: 5px;
+        color: rgba(255,255,255,.5);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+
+    .wins .stat-value {
+        color: #22c55e;
+    }
+
+    .draws .stat-value {
+        color: #a3a3a3;
+    }
+
+    .losses .stat-value {
+        color: #ef4444;
+    }
+
+    /* RESULT BAR */
+
+    .result-bar {
+        display: flex;
+        width: 100%;
+        height: 8px;
+        overflow: hidden;
+        margin-bottom: 13px;
+        border-radius: 99px;
+        background: rgba(255,255,255,.06);
+    }
+
+    .result-win {
+        background: #22c55e;
+        transition: width .35s ease;
+    }
+
+    .result-draw {
+        background: #777;
+        transition: width .35s ease;
+    }
+
+    .result-loss {
+        background: #ef4444;
+        transition: width .35s ease;
+    }
+
+    /* FOOTER */
+
+    .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: rgba(255,255,255,.5);
+        font-size: 11px;
+    }
+
+    .record {
+        color: rgba(255,255,255,.8);
+        font-weight: 800;
+    }
+
+    .refresh-info {
+        font-size: 10px;
+    }
+
+    /* EMPTY / LOADING / ERROR */
+
+    .state {
+        padding: 25px 10px;
+        text-align: center;
+        color: rgba(255,255,255,.5);
+        font-size: 13px;
+    }
+
+    .error {
+        color: #f87171;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    /* SMALL SCREEN */
+
+    @media (max-width: 360px) {
+        .lichess-widget {
+            padding: 16px;
+        }
+
+        .mode {
+            font-size: 11px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="lichess-widget">
+
+    <div class="header">
+        <div class="avatar" id="avatar">T</div>
+
+        <div class="user-info">
+            <div class="username" id="username">Super_FanZhendong</div>
+            <div class="date" id="date">Dzisiaj</div>
+        </div>
+
+        <div class="live">
+            <span class="live-dot"></span>
+            TODAY
+        </div>
+    </div>
+
+
+    <div class="modes">
+        <button class="mode" data-mode="bullet">Bullet</button>
+        <button class="mode active" data-mode="blitz">Blitz</button>
+        <button class="mode" data-mode="rapid">Rapid</button>
+    </div>
+
+
+    <div id="loading" class="state">
+        Ładowanie partii…
+    </div>
+
+
+    <div id="error" class="state error hidden">
+        Nie udało się pobrać danych z Lichess.
+    </div>
+
+
+    <div id="content" class="hidden">
+
+        <div class="stats">
+
+            <div class="stat wins">
+                <div class="stat-value" id="wins">0</div>
+                <div class="stat-label">Wins</div>
+            </div>
+
+            <div class="stat draws">
+                <div class="stat-value" id="draws">0</div>
+                <div class="stat-label">Draws</div>
+            </div>
+
+            <div class="stat losses">
+                <div class="stat-value" id="losses">0</div>
+                <div class="stat-label">Losses</div>
+            </div>
+
+        </div>
+
+
+        <div class="result-bar">
+            <div class="result-win" id="winBar"></div>
+            <div class="result-draw" id="drawBar"></div>
+            <div class="result-loss" id="lossBar"></div>
+        </div>
+
+
+        <div class="footer">
+            <div class="record" id="record">
+                0–0–0
+            </div>
+
+            <div class="refresh-info">
+                <span id="gameCount">0</span> games
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+/* =========================================================
+   KONFIGURACJA
+   ========================================================= */
+
+const USERNAME = "Super_FanZhendong";
+
+/*
+    Co ile sekund sprawdzamy nowe partie.
+*/
+const REFRESH_INTERVAL = 15000;
+
+/*
+    Po wykryciu nowej partii widget przełączy się
+    automatycznie na jej tryb.
+*/
+const AUTO_SWITCH_DELAY = 6000;
+
+
+/* =========================================================
+   TRYBY
+   ========================================================= */
+
+const MODES = ["bullet", "blitz", "rapid"];
+
+const MODE_NAMES = {
+    bullet: "Bullet",
+    blitz: "Blitz",
+    rapid: "Rapid"
+};
+
+
+/* =========================================================
+   STAN APLIKACJI
+   ========================================================= */
+
+const state = {
+
+    /*
+        Wszystkie znane partie z dzisiaj.
+
+        Map zamiast zwykłej tablicy pozwala uniknąć
+        dodawania tej samej partii drugi raz.
+    */
+    games: new Map(),
+
+    /*
+        Statystyki dla każdego trybu.
+    */
+    stats: {
+        bullet: {
+            wins: 0,
+            draws: 0,
+            losses: 0
+        },
+
+        blitz: {
+            wins: 0,
+            draws: 0,
+            losses: 0
+        },
+
+        rapid: {
+            wins: 0,
+            draws: 0,
+            losses: 0
+        }
+    },
+
+    /*
+        Aktualnie wyświetlany tryb.
+    */
+    currentMode: "blitz",
+
+    /*
+        Timestamp ostatniej znanej partii.
+    */
+    lastGameTime: 0,
+
+    /*
+        Czy pierwszy request został już wykonany.
+    */
+    initialized: false,
+
+    /*
+        Czy aktualnie trwa request.
+        Chroni przed wykonywaniem dwóch requestów naraz.
+    */
+    loading: false
+};
+
+
+/* =========================================================
+   ELEMENTY DOM
+   ========================================================= */
+
+const $ = id => document.getElementById(id);
+
+const loadingEl = $("loading");
+const errorEl = $("error");
+const contentEl = $("content");
+
+const usernameEl = $("username");
+const avatarEl = $("avatar");
+const dateEl = $("date");
+
+const winsEl = $("wins");
+const drawsEl = $("draws");
+const lossesEl = $("losses");
+
+const winBar = $("winBar");
+const drawBar = $("drawBar");
+const lossBar = $("lossBar");
+
+const recordEl = $("record");
+const gameCountEl = $("gameCount");
+
+const modeButtons = document.querySelectorAll(".mode");
+
+
+/* =========================================================
+   PODSTAWOWE INFORMACJE
+   ========================================================= */
+
+usernameEl.textContent = USERNAME;
+avatarEl.textContent = USERNAME.charAt(0).toUpperCase();
+
+dateEl.textContent = new Intl.DateTimeFormat("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+}).format(new Date());
+
+
+/* =========================================================
+   POMOCNICZE
+   ========================================================= */
+
+function getTodayStart() {
+
+    const date = new Date();
+
+    date.setHours(0, 0, 0, 0);
+
+    return date.getTime();
+}
+
+
+function getNow() {
+    return Date.now();
+}
+
+
+function normalizeSpeed(speed) {
+
+    if (speed === "bullet") return "bullet";
+    if (speed === "blitz") return "blitz";
+    if (speed === "rapid") return "rapid";
+
+    return null;
+}
+
+
+/*
+    Określamy wynik z punktu widzenia naszego użytkownika.
+*/
+function getResult(game) {
+
+    const username = USERNAME.toLowerCase();
+
+    const whiteName =
+        game.players?.white?.user?.name?.toLowerCase();
+
+    const blackName =
+        game.players?.black?.user?.name?.toLowerCase();
+
+    let playerColor = null;
+
+    if (whiteName === username) {
+        playerColor = "white";
+    }
+
+    if (blackName === username) {
+        playerColor = "black";
+    }
+
+    if (!playerColor) {
+        return "draw";
+    }
+
+    const winner = game.winner;
+
+    if (!winner) {
+        return "draw";
+    }
+
+    if (winner === playerColor) {
+        return "win";
+    }
+
+    return "loss";
+}
+
+
+/* =========================================================
+   DODAWANIE PARTII
+   ========================================================= */
+
+function addGame(game) {
+
+    /*
+        Bez ID nie możemy bezpiecznie zapobiec duplikatom.
+    */
+    if (!game || !game.id) {
+        return false;
+    }
+
+    /*
+        Partia już została dodana.
+    */
+    if (state.games.has(game.id)) {
+        return false;
+    }
+
+    /*
+        Pobieramy tylko Bullet / Blitz / Rapid.
+    */
+    const mode = normalizeSpeed(game.speed);
+
+    if (!mode) {
+        return false;
+    }
+
+    /*
+        Dodajemy partię do pamięci.
+    */
+    state.games.set(game.id, {
+        ...game,
+        _mode: mode
+    });
+
+    /*
+        Aktualizujemy timestamp ostatniej partii.
+    */
+    const createdAt = Number(game.createdAt || 0);
+
+    if (createdAt > state.lastGameTime) {
+        state.lastGameTime = createdAt;
+    }
+
+    /*
+        Aktualizujemy statystyki.
+    */
+    const result = getResult(game);
+
+    if (result === "win") {
+        state.stats[mode].wins++;
+    }
+
+    if (result === "draw") {
+        state.stats[mode].draws++;
+    }
+
+    if (result === "loss") {
+        state.stats[mode].losses++;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   POBIERANIE NDJSON
+   ========================================================= */
+
+async function fetchGames(url) {
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Accept": "application/x-ndjson"
+        },
+        cache: "no-store"
+    });
+
+    if (!response.ok) {
+
+        /*
+            429 = rate limit.
+        */
+        if (response.status === 429) {
+            throw new Error(
+                "Lichess API: rate limit (429)"
+            );
+        }
+
+        throw new Error(
+            `Lichess API HTTP ${response.status}`
+        );
+    }
+
+    const text = await response.text();
+
+    if (!text.trim()) {
+        return [];
+    }
+
+    /*
+        Endpoint zwraca NDJSON:
+        jedna partia = jedna linia JSON.
+    */
+    const lines = text
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+    const games = [];
+
+    for (const line of lines) {
+
+        try {
+            const game = JSON.parse(line);
+
+            games.push(game);
+
+        } catch (error) {
+
+            console.warn(
+                "Nie udało się sparsować linii NDJSON:",
+                line
+            );
+        }
+    }
+
+    return games;
+}
+
+
+/* =========================================================
+   PIERWSZE POBRANIE
+   ========================================================= */
+
+async function initialLoad() {
+
+    if (state.loading) {
+        return;
+    }
+
+    state.loading = true;
+
+    loadingEl.classList.remove("hidden");
+    errorEl.classList.add("hidden");
+    contentEl.classList.add("hidden");
+
+    try {
+
+        const since = getTodayStart();
+        const until = getNow();
+
+        /*
+            WAŻNE:
+
+            Nie używamy perfType.
+
+            Pobieramy dzisiejsze partie użytkownika,
+            a Bullet / Blitz / Rapid rozpoznajemy
+            lokalnie po game.speed.
+        */
+
+        const url =
+            "https://lichess.org/api/games/user/" +
+            encodeURIComponent(USERNAME) +
+            "?since=" + since +
+            "&until=" + until +
+            "&max=100" +
+            "&pgnInJson=true";
+
+        const games = await fetchGames(url);
+
+        let newestMode = null;
+        let newestTime = 0;
+
+        for (const game of games) {
+
+            const added = addGame(game);
+
+            if (!added) {
+                continue;
+            }
+
+            const gameTime = Number(
+                game.createdAt || 0
+            );
+
+            if (gameTime >= newestTime) {
+
+                newestTime = gameTime;
+                newestMode = normalizeSpeed(
+                    game.speed
+                );
+            }
+        }
+
+        /*
+            Jeżeli znaleziono dzisiejsze partie,
+            ustawiamy tryb ostatniej partii.
+        */
+        if (newestMode) {
+            state.currentMode = newestMode;
+        }
+
+        state.initialized = true;
+
+        render();
+
+    } catch (error) {
+
+        console.error(error);
+
+        showError(
+            "Nie udało się pobrać danych z Lichess."
+        );
+
+    } finally {
+
+        state.loading = false;
+
+        loadingEl.classList.add("hidden");
+    }
+}
+
+
+/* =========================================================
+   AKTUALIZACJA INCREMENTAL
+   ========================================================= */
+
+async function updateGames() {
+
+    /*
+        Nie uruchamiamy drugiego requestu,
+        jeśli poprzedni jeszcze trwa.
+    */
+    if (state.loading) {
+        return;
+    }
+
+    /*
+        Pierwsze pobranie wykonujemy osobno.
+    */
+    if (!state.initialized) {
+        await initialLoad();
+        return;
+    }
+
+    state.loading = true;
+
+    try {
+
+        /*
+            Najważniejsza część optymalizacji.
+
+            Nie pobieramy ponownie całego dnia.
+
+            Pytamy Lichess tylko o partie,
+            które powstały po ostatniej znanej partii.
+
+            Odejmujemy 1 ms, żeby uniknąć problemu
+            na granicy timestampu.
+        */
+
+        const since = Math.max(
+            getTodayStart(),
+            state.lastGameTime + 1
+        );
+
+        const until = getNow();
+
+        /*
+            Jeżeli nie ma jeszcze żadnej partii,
+            używamy początku dnia.
+        */
+        const effectiveSince =
+            state.lastGameTime > 0
+                ? since
+                : getTodayStart();
+
+        const url =
+            "https://lichess.org/api/games/user/" +
+            encodeURIComponent(USERNAME) +
+            "?since=" + effectiveSince +
+            "&until=" + until +
+            "&max=100" +
+            "&pgnInJson=true";
+
+        const games = await fetchGames(url);
+
+        let changedModes = new Set();
+
+        let newestGame = null;
+        let newestTime = 0;
+
+        for (const game of games) {
+
+            const mode = normalizeSpeed(
+                game.speed
+            );
+
+            if (!mode) {
+                continue;
+            }
+
+            const added = addGame(game);
+
+            if (!added) {
+                continue;
+            }
+
+            changedModes.add(mode);
+
+            const gameTime = Number(
+                game.createdAt || 0
+            );
+
+            if (gameTime >= newestTime) {
+
+                newestTime = gameTime;
+                newestGame = game;
+            }
+        }
+
+        /*
+            Jeżeli pojawiły się nowe partie,
+            automatycznie przechodzimy do trybu
+            najnowszej partii.
+        */
+        if (newestGame) {
+
+            const newestMode = normalizeSpeed(
+                newestGame.speed
+            );
+
+            if (newestMode) {
+
+                state.currentMode = newestMode;
+
+                updateModeButtons();
+
+                render();
+
+                /*
+                    Po kilku sekundach ponownie
+                    pokazujemy normalny widok.
+                */
+                setTimeout(() => {
+
+                    render();
+
+                }, AUTO_SWITCH_DELAY);
+            }
+
+        } else {
+
+            /*
+                Nic nowego nie przyszło.
+                Nie trzeba przebudowywać wszystkiego.
+            */
+
+            render();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Aktualizacja Lichess:",
+            error
+        );
+
+        /*
+            Nie chowamy poprzednich poprawnych danych
+            tylko dlatego, że pojedynczy refresh się nie udał.
+        */
+
+    } finally {
+
+        state.loading = false;
+    }
+}
+
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+
+function render() {
+
+    const stats =
+        state.stats[state.currentMode];
+
+    const wins = stats.wins;
+    const draws = stats.draws;
+    const losses = stats.losses;
+
+    const total =
+        wins + draws + losses;
+
+    winsEl.textContent = wins;
+    drawsEl.textContent = draws;
+    lossesEl.textContent = losses;
+
+    recordEl.textContent =
+        `${wins}–${draws}–${losses}`;
+
+    gameCountEl.textContent = total;
+
+    /*
+        Pasek wyników.
+    */
+
+    if (total > 0) {
+
+        winBar.style.width =
+            `${(wins / total) * 100}%`;
+
+        drawBar.style.width =
+            `${(draws / total) * 100}%`;
+
+        lossBar.style.width =
+            `${(losses / total) * 100}%`;
+
+    } else {
+
+        winBar.style.width = "0%";
+        drawBar.style.width = "0%";
+        lossBar.style.width = "0%";
+    }
+
+    /*
+        Bardzo ważne:
+
+        Nawet jeśli aktualny tryb ma 0 partii,
+        NIE chowamy całego widgetu.
+
+        Dzięki temu można normalnie przełączać
+        Bullet / Blitz / Rapid.
+    */
+
+    contentEl.classList.remove("hidden");
+
+    loadingEl.classList.add("hidden");
+    errorEl.classList.add("hidden");
+
+    updateModeButtons();
+}
+
+
+/* =========================================================
+   PRZYCISKI TRYBÓW
+   ========================================================= */
+
+function updateModeButtons() {
+
+    modeButtons.forEach(button => {
+
+        const mode = button.dataset.mode;
+
+        button.classList.toggle(
+            "active",
+            mode === state.currentMode
+        );
+    });
+}
+
+
+modeButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        const mode =
+            button.dataset.mode;
+
+        if (!MODES.includes(mode)) {
+            return;
+        }
+
+        state.currentMode = mode;
+
+        render();
+    });
+});
+
+
+/* =========================================================
+   BŁĄD
+   ========================================================= */
+
+function showError(message) {
+
+    loadingEl.classList.add("hidden");
+
+    contentEl.classList.add("hidden");
+
+    errorEl.textContent = message;
+
+    errorEl.classList.remove("hidden");
+}
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+initialLoad();
+
+
+/*
+    Automatyczna aktualizacja co 15 sekund.
+
+    Każdy request jest wykonywany dopiero po zakończeniu
+    poprzedniego dzięki state.loading.
+*/
+setInterval(() => {
+
+    updateGames();
+
+}, REFRESH_INTERVAL);
+</script>
+
+</body>
+</html>
+
