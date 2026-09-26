@@ -3,664 +3,1434 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lichess Daily Activity</title>
+
+<title>Lichess Stream Stats</title>
 
 <style>
-    * {
-        box-sizing: border-box;
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 100px 20px 20px;
+    background: #0d1117;
+    color: #fff;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+                 "Segoe UI", sans-serif;
+}
+
+body {
+    background: transparent;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+
+/* =========================================================
+   WIDGET
+   ========================================================= */
+
+.lichess-widget {
+
+    width: 100%;
+    max-width: 330px;
+
+    margin: 0 auto;
+
+    padding: 12px 13px 11px;
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #171b22 0%,
+            #11151b 100%
+        );
+
+    border: 1px solid rgba(255,255,255,.12);
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.06);
+
+}
+
+
+/* =========================================================
+   MODE SWITCHER
+   ========================================================= */
+
+.modes {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 4px;
+
+    padding: 3px;
+
+    margin-bottom: 11px;
+
+    border-radius: 9px;
+
+    background: #090c10;
+
+    border: 1px solid rgba(255,255,255,.07);
+
+}
+
+
+.mode {
+
+    height: 27px;
+
+    padding: 0;
+
+    border: 0;
+
+    border-radius: 6px;
+
+    background: transparent;
+
+    color:
+        rgba(255,255,255,.42);
+
+    font-family: inherit;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: .06em;
+
+    text-transform: uppercase;
+
+    cursor: pointer;
+
+    transition:
+        background .18s ease,
+        color .18s ease,
+        box-shadow .18s ease;
+
+}
+
+
+.mode:hover {
+
+    color:
+        rgba(255,255,255,.8);
+
+}
+
+
+.mode.active {
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.15),
+            rgba(255,255,255,.07)
+        );
+
+    box-shadow:
+        inset 0 1px 0
+        rgba(255,255,255,.08),
+        0 2px 6px
+        rgba(0,0,0,.25);
+
+}
+
+
+/* =========================================================
+   SCORE
+   ========================================================= */
+
+.stats {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 5px;
+
+    margin-bottom: 9px;
+
+}
+
+
+.stat {
+
+    height: 53px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    border-radius: 8px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    border:
+        1px solid
+        rgba(255,255,255,.06);
+
+}
+
+
+.stat-value {
+
+    font-size: 22px;
+
+    line-height: 1;
+
+    font-weight: 950;
+
+    letter-spacing: -.04em;
+
+}
+
+
+.stat-label {
+
+    margin-top: 5px;
+
+    font-size: 7px;
+
+    line-height: 1;
+
+    font-weight: 900;
+
+    letter-spacing: .1em;
+
+    text-transform: uppercase;
+
+    color:
+        rgba(255,255,255,.38);
+
+}
+
+
+/* =========================================================
+   COLORS
+   ========================================================= */
+
+.wins {
+
+    border-color:
+        rgba(55,220,130,.16);
+
+}
+
+.wins .stat-value {
+
+    color: #48df8a;
+
+    text-shadow:
+        0 0 12px
+        rgba(72,223,138,.18);
+
+}
+
+
+.draws {
+
+    border-color:
+        rgba(190,195,205,.11);
+
+}
+
+.draws .stat-value {
+
+    color: #d3d6dc;
+
+}
+
+
+.losses {
+
+    border-color:
+        rgba(255,75,75,.15);
+
+}
+
+.losses .stat-value {
+
+    color: #ff6262;
+
+    text-shadow:
+        0 0 12px
+        rgba(255,98,98,.18);
+
+}
+
+
+/* =========================================================
+   RESULT BAR
+   ========================================================= */
+
+.result-bar {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 12px;
+
+    display: flex;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background:
+        #080a0d;
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    box-shadow:
+        inset 0 2px 4px
+        rgba(0,0,0,.55);
+
+}
+
+
+/*
+   Kolorowe segmenty.
+*/
+
+.result-win,
+.result-draw,
+.result-loss {
+
+    height: 100%;
+
+    transition:
+        width .4s
+        cubic-bezier(.22,1,.36,1);
+
+}
+
+
+.result-win {
+
+    background:
+        linear-gradient(
+            90deg,
+            #24bd6b,
+            #51e495
+        );
+
+    box-shadow:
+        0 0 10px
+        rgba(70,225,140,.28);
+
+}
+
+
+.result-draw {
+
+    background:
+        linear-gradient(
+            90deg,
+            #707782,
+            #a3a8b0
+        );
+
+}
+
+
+.result-loss {
+
+    background:
+        linear-gradient(
+            90deg,
+            #ef4c4c,
+            #ff6868
+        );
+
+    box-shadow:
+        0 0 10px
+        rgba(255,80,80,.25);
+
+}
+
+
+/* =========================================================
+   BAR LABELS
+   ========================================================= */
+
+.bar-info {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    margin-top: 5px;
+
+}
+
+
+.bar-label {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 4px;
+
+    color:
+        rgba(255,255,255,.35);
+
+    font-size: 7px;
+
+    font-weight: 900;
+
+    letter-spacing: .05em;
+
+}
+
+
+.dot {
+
+    width: 5px;
+
+    height: 5px;
+
+    border-radius: 50%;
+
+}
+
+
+.dot-win {
+
+    background: #48df8a;
+
+}
+
+
+.dot-draw {
+
+    background: #a3a8b0;
+
+}
+
+
+.dot-loss {
+
+    background: #ff6262;
+
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.state {
+
+    padding: 14px 5px;
+
+    text-align: center;
+
+    color:
+        rgba(255,255,255,.4);
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+}
+
+
+.loading-dot {
+
+    display: inline-block;
+
+    width: 6px;
+
+    height: 6px;
+
+    margin-right: 5px;
+
+    border-radius: 50%;
+
+    background: #58a6ff;
+
+    animation:
+        loadingPulse
+        1.1s
+        infinite
+        ease-in-out;
+
+}
+
+
+@keyframes loadingPulse {
+
+    0%,
+    100% {
+
+        opacity: .3;
+
+        transform:
+            scale(.75);
+
     }
 
-    body {
-        margin: 0;
-        padding: 20px;
-        background: #0d1117;
-        color: #fff;
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
-                     "Segoe UI", sans-serif;
+    50% {
+
+        opacity: 1;
+
+        transform:
+            scale(1);
+
     }
+
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.error {
+
+    color:
+        #ff6b6b;
+
+}
+
+
+/* =========================================================
+   HIDDEN
+   ========================================================= */
+
+.hidden {
+
+    display: none !important;
+
+}
+
+
+/* =========================================================
+   SMALL STREAM SIZES
+   ========================================================= */
+
+@media (max-width: 300px) {
 
     .lichess-widget {
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto;
-        padding: 20px;
-        border-radius: 22px;
-        background:
-            linear-gradient(
-                145deg,
-                rgba(255,255,255,.08),
-                rgba(255,255,255,.025)
-            );
-        border: 1px solid rgba(255,255,255,.09);
-        box-shadow: 0 20px 50px rgba(0,0,0,.35);
-        backdrop-filter: blur(16px);
-    }
 
-    .header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
+        max-width: 280px;
 
-    .avatar {
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: #3b82f6;
-        font-weight: 800;
-        font-size: 18px;
-        flex-shrink: 0;
-    }
+        padding:
+            10px;
 
-    .user-info {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .username {
-        font-size: 16px;
-        font-weight: 800;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .date {
-        margin-top: 3px;
-        color: rgba(255,255,255,.55);
-        font-size: 12px;
-    }
-
-    .live {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: rgba(255,255,255,.65);
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: .08em;
-    }
-
-    .live-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #22c55e;
-        box-shadow: 0 0 10px #22c55e;
-    }
-
-    /* MODE SWITCHER */
-
-    .modes {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 5px;
-        padding: 4px;
-        margin-bottom: 18px;
-        border-radius: 12px;
-        background: rgba(255,255,255,.045);
     }
 
     .mode {
-        border: 0;
-        border-radius: 9px;
-        padding: 9px 4px;
-        color: rgba(255,255,255,.5);
-        background: transparent;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 800;
-        transition: .2s ease;
-    }
 
-    .mode:hover {
-        color: #fff;
-    }
+        height: 25px;
 
-    .mode.active {
-        color: #fff;
-        background: rgba(255,255,255,.10);
-    }
+        font-size: 9px;
 
-    /* STATS */
-
-    .stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        margin-bottom: 16px;
     }
 
     .stat {
-        padding: 13px 8px;
-        text-align: center;
-        border-radius: 13px;
-        background: rgba(255,255,255,.045);
+
+        height: 49px;
+
     }
 
     .stat-value {
-        font-size: 21px;
-        line-height: 1;
-        font-weight: 900;
+
+        font-size: 20px;
+
     }
 
-    .stat-label {
-        margin-top: 5px;
-        color: rgba(255,255,255,.5);
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .06em;
-    }
+}
 
-    .wins .stat-value {
-        color: #22c55e;
-    }
-
-    .draws .stat-value {
-        color: #a3a3a3;
-    }
-
-    .losses .stat-value {
-        color: #ef4444;
-    }
-
-    /* RESULT BAR */
-
-    .result-bar {
-        display: flex;
-        width: 100%;
-        height: 8px;
-        overflow: hidden;
-        margin-bottom: 13px;
-        border-radius: 99px;
-        background: rgba(255,255,255,.06);
-    }
-
-    .result-win {
-        background: #22c55e;
-        transition: width .35s ease;
-    }
-
-    .result-draw {
-        background: #777;
-        transition: width .35s ease;
-    }
-
-    .result-loss {
-        background: #ef4444;
-        transition: width .35s ease;
-    }
-
-    /* FOOTER */
-
-    .footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: rgba(255,255,255,.5);
-        font-size: 11px;
-    }
-
-    .record {
-        color: rgba(255,255,255,.8);
-        font-weight: 800;
-    }
-
-    .refresh-info {
-        font-size: 10px;
-    }
-
-    /* EMPTY / LOADING / ERROR */
-
-    .state {
-        padding: 25px 10px;
-        text-align: center;
-        color: rgba(255,255,255,.5);
-        font-size: 13px;
-    }
-
-    .error {
-        color: #f87171;
-    }
-
-    .hidden {
-        display: none !important;
-    }
-
-    /* SMALL SCREEN */
-
-    @media (max-width: 360px) {
-        .lichess-widget {
-            padding: 16px;
-        }
-
-        .mode {
-            font-size: 11px;
-        }
-    }
 </style>
 </head>
 
+
 <body>
+
 
 <div class="lichess-widget">
 
-    <div class="header">
-        <div class="avatar" id="avatar">T</div>
 
-        <div class="user-info">
-            <div class="username" id="username">Mcmanow</div>
-            <div class="date" id="date">Dzisiaj</div>
-        </div>
-
-        <div class="live">
-            <span class="live-dot"></span>
-            TODAY
-        </div>
-    </div>
-
+    <!-- =====================================================
+         MODE SWITCHER
+         ===================================================== -->
 
     <div class="modes">
-        <button class="mode" data-mode="bullet">Bullet</button>
-        <button class="mode active" data-mode="blitz">Blitz</button>
-        <button class="mode" data-mode="rapid">Rapid</button>
+
+        <button
+            class="mode"
+            data-mode="bullet">
+
+            Bullet
+
+        </button>
+
+
+        <button
+            class="mode active"
+            data-mode="blitz">
+
+            Blitz
+
+        </button>
+
+
+        <button
+            class="mode"
+            data-mode="rapid">
+
+            Rapid
+
+        </button>
+
     </div>
 
 
-    <div id="loading" class="state">
-        Ładowanie partii…
+
+    <!-- =====================================================
+         LOADING
+         ===================================================== -->
+
+    <div
+        id="loading"
+        class="state">
+
+        <span
+            class="loading-dot">
+        </span>
+
+        Ładowanie…
+
     </div>
 
 
-    <div id="error" class="state error hidden">
-        Nie udało się pobrać danych z Lichess.
+
+    <!-- =====================================================
+         ERROR
+         ===================================================== -->
+
+    <div
+        id="error"
+        class="state error hidden">
+
+        Nie udało się pobrać danych.
+
     </div>
 
 
-    <div id="content" class="hidden">
+
+    <!-- =====================================================
+         CONTENT
+         ===================================================== -->
+
+    <div
+        id="content"
+        class="hidden">
+
+
+        <!-- =================================================
+             RESULTS
+             ================================================= -->
 
         <div class="stats">
 
+
+            <!-- WINS -->
+
             <div class="stat wins">
-                <div class="stat-value" id="wins">0</div>
-                <div class="stat-label">Wins</div>
+
+                <div
+                    class="stat-value"
+                    id="wins">
+
+                    0
+
+                </div>
+
+                <div class="stat-label">
+
+                    Wins
+
+                </div>
+
             </div>
+
+
+
+            <!-- DRAWS -->
 
             <div class="stat draws">
-                <div class="stat-value" id="draws">0</div>
-                <div class="stat-label">Draws</div>
+
+                <div
+                    class="stat-value"
+                    id="draws">
+
+                    0
+
+                </div>
+
+                <div class="stat-label">
+
+                    Draws
+
+                </div>
+
             </div>
+
+
+
+            <!-- LOSSES -->
 
             <div class="stat losses">
-                <div class="stat-value" id="losses">0</div>
-                <div class="stat-label">Losses</div>
+
+                <div
+                    class="stat-value"
+                    id="losses">
+
+                    0
+
+                </div>
+
+                <div class="stat-label">
+
+                    Losses
+
+                </div>
+
             </div>
+
 
         </div>
 
+
+
+        <!-- =================================================
+             PROGRESS BAR
+             ================================================= -->
 
         <div class="result-bar">
-            <div class="result-win" id="winBar"></div>
-            <div class="result-draw" id="drawBar"></div>
-            <div class="result-loss" id="lossBar"></div>
+
+
+            <div
+                class="result-win"
+                id="winBar">
+            </div>
+
+
+            <div
+                class="result-draw"
+                id="drawBar">
+            </div>
+
+
+            <div
+                class="result-loss"
+                id="lossBar">
+            </div>
+
+
         </div>
 
 
-        <div class="footer">
-            <div class="record" id="record">
-                0–0–0
+
+        <!-- =================================================
+             BAR LEGEND
+             ================================================= -->
+
+        <div class="bar-info">
+
+
+            <div class="bar-label">
+
+                <span
+                    class="dot dot-win">
+                </span>
+
+                WINS
+
             </div>
 
-            <div class="refresh-info">
-                <span id="gameCount">0</span> games
+
+            <div class="bar-label">
+
+                <span
+                    class="dot dot-draw">
+                </span>
+
+                DRAWS
+
             </div>
+
+
+            <div class="bar-label">
+
+                <span
+                    class="dot dot-loss">
+                </span>
+
+                LOSSES
+
+            </div>
+
+
         </div>
+
 
     </div>
+
 
 </div>
 
 
+
 <script>
+
+
 /* =========================================================
    KONFIGURACJA
    ========================================================= */
 
-const USERNAME = "Mcmanow";
 
 /*
-    Co ile sekund sprawdzamy nowe partie.
+    Nazwa użytkownika Lichess.
 */
-const REFRESH_INTERVAL = 15000;
+
+const USERNAME =
+    "Princec7";
+
 
 /*
-    Po wykryciu nowej partii widget przełączy się
-    automatycznie na jej tryb.
+    Co ile milisekund
+    sprawdzamy nowe partie.
 */
-const AUTO_SWITCH_DELAY = 6000;
+
+const REFRESH_INTERVAL =
+    15000;
+
+
+/*
+    Po wykryciu nowej partii
+    widget automatycznie przełącza
+    się na jej tryb.
+*/
+
+const AUTO_SWITCH_DELAY =
+    6000;
+
 
 
 /* =========================================================
    TRYBY
    ========================================================= */
 
-const MODES = ["bullet", "blitz", "rapid"];
+const MODES = [
 
-const MODE_NAMES = {
-    bullet: "Bullet",
-    blitz: "Blitz",
-    rapid: "Rapid"
-};
+    "bullet",
+    "blitz",
+    "rapid"
+
+];
+
 
 
 /* =========================================================
-   STAN APLIKACJI
+   STAN
    ========================================================= */
 
 const state = {
 
-    /*
-        Wszystkie znane partie z dzisiaj.
 
-        Map zamiast zwykłej tablicy pozwala uniknąć
-        dodawania tej samej partii drugi raz.
+    /*
+        Wszystkie znane partie
+        z dzisiejszego dnia.
     */
-    games: new Map(),
+
+    games:
+        new Map(),
+
 
     /*
         Statystyki dla każdego trybu.
     */
+
     stats: {
+
         bullet: {
+
             wins: 0,
             draws: 0,
             losses: 0
+
         },
 
         blitz: {
+
             wins: 0,
             draws: 0,
             losses: 0
+
         },
 
         rapid: {
+
             wins: 0,
             draws: 0,
             losses: 0
+
         }
+
     },
 
-    /*
-        Aktualnie wyświetlany tryb.
-    */
-    currentMode: "blitz",
 
     /*
-        Timestamp ostatniej znanej partii.
+        Aktualnie pokazany tryb.
     */
-    lastGameTime: 0,
+
+    currentMode:
+        "blitz",
+
 
     /*
-        Czy pierwszy request został już wykonany.
+        Timestamp ostatniej partii.
     */
-    initialized: false,
+
+    lastGameTime:
+        0,
+
 
     /*
-        Czy aktualnie trwa request.
-        Chroni przed wykonywaniem dwóch requestów naraz.
+        Czy pierwszy request
+        został już wykonany.
     */
-    loading: false
+
+    initialized:
+        false,
+
+
+    /*
+        Blokada równoległych requestów.
+    */
+
+    loading:
+        false
+
 };
 
 
+
 /* =========================================================
-   ELEMENTY DOM
+   DOM
    ========================================================= */
 
-const $ = id => document.getElementById(id);
+const $ =
+    id =>
+        document.getElementById(id);
 
-const loadingEl = $("loading");
-const errorEl = $("error");
-const contentEl = $("content");
 
-const usernameEl = $("username");
-const avatarEl = $("avatar");
-const dateEl = $("date");
+const loadingEl =
+    $("loading");
 
-const winsEl = $("wins");
-const drawsEl = $("draws");
-const lossesEl = $("losses");
 
-const winBar = $("winBar");
-const drawBar = $("drawBar");
-const lossBar = $("lossBar");
+const errorEl =
+    $("error");
 
-const recordEl = $("record");
-const gameCountEl = $("gameCount");
 
-const modeButtons = document.querySelectorAll(".mode");
+const contentEl =
+    $("content");
+
+
+const winsEl =
+    $("wins");
+
+
+const drawsEl =
+    $("draws");
+
+
+const lossesEl =
+    $("losses");
+
+
+const winBar =
+    $("winBar");
+
+
+const drawBar =
+    $("drawBar");
+
+
+const lossBar =
+    $("lossBar");
+
+
+const modeButtons =
+    document.querySelectorAll(
+        ".mode"
+    );
+
 
 
 /* =========================================================
-   PODSTAWOWE INFORMACJE
-   ========================================================= */
-
-usernameEl.textContent = USERNAME;
-avatarEl.textContent = USERNAME.charAt(0).toUpperCase();
-
-dateEl.textContent = new Intl.DateTimeFormat("pl-PL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-}).format(new Date());
-
-
-/* =========================================================
-   POMOCNICZE
+   CZAS
    ========================================================= */
 
 function getTodayStart() {
 
-    const date = new Date();
+    const date =
+        new Date();
 
-    date.setHours(0, 0, 0, 0);
+    date.setHours(
+        0,
+        0,
+        0,
+        0
+    );
 
     return date.getTime();
+
 }
 
 
 function getNow() {
+
     return Date.now();
+
 }
 
 
-function normalizeSpeed(speed) {
 
-    if (speed === "bullet") return "bullet";
-    if (speed === "blitz") return "blitz";
-    if (speed === "rapid") return "rapid";
+/* =========================================================
+   NORMALIZACJA TRYBU
+   ========================================================= */
+
+function normalizeSpeed(
+    speed
+) {
+
+    if (
+        speed === "bullet"
+    ) {
+
+        return "bullet";
+
+    }
+
+
+    if (
+        speed === "blitz"
+    ) {
+
+        return "blitz";
+
+    }
+
+
+    if (
+        speed === "rapid"
+    ) {
+
+        return "rapid";
+
+    }
+
 
     return null;
+
 }
 
 
-/*
-    Określamy wynik z punktu widzenia naszego użytkownika.
-*/
-function getResult(game) {
 
-    const username = USERNAME.toLowerCase();
+/* =========================================================
+   WYNIK PARTII
+   ========================================================= */
+
+function getResult(
+    game
+) {
+
+    const username =
+        USERNAME.toLowerCase();
+
 
     const whiteName =
-        game.players?.white?.user?.name?.toLowerCase();
+        game.players
+            ?.white
+            ?.user
+            ?.name
+            ?.toLowerCase();
+
 
     const blackName =
-        game.players?.black?.user?.name?.toLowerCase();
+        game.players
+            ?.black
+            ?.user
+            ?.name
+            ?.toLowerCase();
 
-    let playerColor = null;
 
-    if (whiteName === username) {
-        playerColor = "white";
+    let playerColor =
+        null;
+
+
+    if (
+        whiteName === username
+    ) {
+
+        playerColor =
+            "white";
+
     }
 
-    if (blackName === username) {
-        playerColor = "black";
+
+    if (
+        blackName === username
+    ) {
+
+        playerColor =
+            "black";
+
     }
+
+
+    /*
+        Nie znaleziono użytkownika.
+    */
 
     if (!playerColor) {
+
         return "draw";
+
     }
 
-    const winner = game.winner;
+
+    const winner =
+        game.winner;
+
+
+    /*
+        Brak zwycięzcy oznacza remis.
+    */
 
     if (!winner) {
+
         return "draw";
+
     }
 
-    if (winner === playerColor) {
+
+    if (
+        winner === playerColor
+    ) {
+
         return "win";
+
     }
+
 
     return "loss";
+
 }
+
 
 
 /* =========================================================
    DODAWANIE PARTII
    ========================================================= */
 
-function addGame(game) {
+function addGame(
+    game
+) {
+
 
     /*
-        Bez ID nie możemy bezpiecznie zapobiec duplikatom.
+        Bez ID nie możemy
+        bezpiecznie wykrywać duplikatów.
     */
-    if (!game || !game.id) {
+
+    if (
+        !game ||
+        !game.id
+    ) {
+
         return false;
+
     }
 
-    /*
-        Partia już została dodana.
-    */
-    if (state.games.has(game.id)) {
-        return false;
-    }
 
     /*
-        Pobieramy tylko Bullet / Blitz / Rapid.
+        Partia już jest znana.
     */
-    const mode = normalizeSpeed(game.speed);
+
+    if (
+        state.games.has(
+            game.id
+        )
+    ) {
+
+        return false;
+
+    }
+
+
+    /*
+        Pobieramy wyłącznie
+        Bullet / Blitz / Rapid.
+    */
+
+    const mode =
+        normalizeSpeed(
+            game.speed
+        );
+
 
     if (!mode) {
+
         return false;
+
     }
+
 
     /*
-        Dodajemy partię do pamięci.
+        Zapamiętujemy partię.
     */
-    state.games.set(game.id, {
-        ...game,
-        _mode: mode
-    });
+
+    state.games.set(
+        game.id,
+        {
+            ...game,
+            _mode: mode
+        }
+    );
+
 
     /*
-        Aktualizujemy timestamp ostatniej partii.
+        Aktualizujemy timestamp.
     */
-    const createdAt = Number(game.createdAt || 0);
 
-    if (createdAt > state.lastGameTime) {
-        state.lastGameTime = createdAt;
+    const createdAt =
+        Number(
+            game.createdAt || 0
+        );
+
+
+    if (
+        createdAt >
+        state.lastGameTime
+    ) {
+
+        state.lastGameTime =
+            createdAt;
+
     }
+
 
     /*
-        Aktualizujemy statystyki.
+        Ustalamy wynik.
     */
-    const result = getResult(game);
 
-    if (result === "win") {
-        state.stats[mode].wins++;
+    const result =
+        getResult(game);
+
+
+    if (
+        result === "win"
+    ) {
+
+        state.stats[
+            mode
+        ].wins++;
+
     }
 
-    if (result === "draw") {
-        state.stats[mode].draws++;
+
+    if (
+        result === "draw"
+    ) {
+
+        state.stats[
+            mode
+        ].draws++;
+
     }
 
-    if (result === "loss") {
-        state.stats[mode].losses++;
+
+    if (
+        result === "loss"
+    ) {
+
+        state.stats[
+            mode
+        ].losses++;
+
     }
+
 
     return true;
+
 }
+
 
 
 /* =========================================================
    POBIERANIE NDJSON
    ========================================================= */
 
-async function fetchGames(url) {
+async function fetchGames(
+    url
+) {
 
-    const response = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Accept": "application/x-ndjson"
-        },
-        cache: "no-store"
-    });
 
-    if (!response.ok) {
+    const response =
+        await fetch(
+            url,
+            {
+                method:
+                    "GET",
+
+                headers: {
+
+                    "Accept":
+                        "application/x-ndjson"
+
+                },
+
+                cache:
+                    "no-store"
+
+            }
+        );
+
+
+    /*
+        Błąd HTTP.
+    */
+
+    if (
+        !response.ok
+    ) {
+
 
         /*
-            429 = rate limit.
+            Rate limit Lichess.
         */
-        if (response.status === 429) {
+
+        if (
+            response.status ===
+            429
+        ) {
+
             throw new Error(
-                "Lichess API: rate limit (429)"
+                "Lichess API rate limit"
             );
+
         }
+
 
         throw new Error(
             `Lichess API HTTP ${response.status}`
         );
+
     }
 
-    const text = await response.text();
 
-    if (!text.trim()) {
+    const text =
+        await response.text();
+
+
+    if (
+        !text.trim()
+    ) {
+
         return [];
+
     }
+
 
     /*
-        Endpoint zwraca NDJSON:
-        jedna partia = jedna linia JSON.
+        NDJSON =
+        jedna partia na linię.
     */
-    const lines = text
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean);
+
+    const lines =
+        text
+            .split("\n")
+            .map(
+                line =>
+                    line.trim()
+            )
+            .filter(Boolean);
+
 
     const games = [];
 
-    for (const line of lines) {
+
+    for (
+        const line of lines
+    ) {
 
         try {
-            const game = JSON.parse(line);
 
-            games.push(game);
+            const game =
+                JSON.parse(line);
 
-        } catch (error) {
+            games.push(
+                game
+            );
+
+        } catch (
+            error
+        ) {
 
             console.warn(
-                "Nie udało się sparsować linii NDJSON:",
+                "Nie udało się odczytać partii:",
                 line
             );
+
         }
+
     }
 
+
     return games;
+
 }
+
 
 
 /* =========================================================
@@ -669,249 +1439,447 @@ async function fetchGames(url) {
 
 async function initialLoad() {
 
-    if (state.loading) {
+
+    /*
+        Nie uruchamiamy
+        równoległego requestu.
+    */
+
+    if (
+        state.loading
+    ) {
+
         return;
+
     }
 
-    state.loading = true;
 
-    loadingEl.classList.remove("hidden");
-    errorEl.classList.add("hidden");
-    contentEl.classList.add("hidden");
+    state.loading =
+        true;
+
+
+    loadingEl
+        .classList
+        .remove(
+            "hidden"
+        );
+
+
+    errorEl
+        .classList
+        .add(
+            "hidden"
+        );
+
+
+    contentEl
+        .classList
+        .add(
+            "hidden"
+        );
+
 
     try {
 
-        const since = getTodayStart();
-        const until = getNow();
+
+        const since =
+            getTodayStart();
+
+
+        const until =
+            getNow();
+
 
         /*
-            WAŻNE:
-
-            Nie używamy perfType.
-
-            Pobieramy dzisiejsze partie użytkownika,
-            a Bullet / Blitz / Rapid rozpoznajemy
-            lokalnie po game.speed.
+            Pobieramy dzisiejsze partie.
         */
 
         const url =
             "https://lichess.org/api/games/user/" +
-            encodeURIComponent(USERNAME) +
-            "?since=" + since +
-            "&until=" + until +
+            encodeURIComponent(
+                USERNAME
+            ) +
+            "?since=" +
+            since +
+            "&until=" +
+            until +
             "&max=100" +
             "&pgnInJson=true";
 
-        const games = await fetchGames(url);
 
-        let newestMode = null;
-        let newestTime = 0;
-
-        for (const game of games) {
-
-            const added = addGame(game);
-
-            if (!added) {
-                continue;
-            }
-
-            const gameTime = Number(
-                game.createdAt || 0
+        const games =
+            await fetchGames(
+                url
             );
 
-            if (gameTime >= newestTime) {
 
-                newestTime = gameTime;
-                newestMode = normalizeSpeed(
-                    game.speed
-                );
-            }
-        }
+        let newestMode =
+            null;
+
+
+        let newestTime =
+            0;
+
 
         /*
-            Jeżeli znaleziono dzisiejsze partie,
-            ustawiamy tryb ostatniej partii.
+            Dodajemy wszystkie
+            dzisiejsze partie.
         */
-        if (newestMode) {
-            state.currentMode = newestMode;
+
+        for (
+            const game of games
+        ) {
+
+
+            const added =
+                addGame(
+                    game
+                );
+
+
+            if (!added) {
+
+                continue;
+
+            }
+
+
+            const gameTime =
+                Number(
+                    game.createdAt ||
+                    0
+                );
+
+
+            /*
+                Zapamiętujemy
+                najnowszą partię.
+            */
+
+            if (
+                gameTime >=
+                newestTime
+            ) {
+
+                newestTime =
+                    gameTime;
+
+
+                newestMode =
+                    normalizeSpeed(
+                        game.speed
+                    );
+
+            }
+
         }
 
-        state.initialized = true;
+
+        /*
+            Jeśli istnieje dzisiejsza
+            partia, pokazujemy jej tryb.
+        */
+
+        if (
+            newestMode
+        ) {
+
+            state.currentMode =
+                newestMode;
+
+        }
+
+
+        state.initialized =
+            true;
+
 
         render();
 
-    } catch (error) {
 
-        console.error(error);
+    } catch (
+        error
+    ) {
 
-        showError(
-            "Nie udało się pobrać danych z Lichess."
+
+        console.error(
+            error
         );
+
+
+        showError();
 
     } finally {
 
-        state.loading = false;
 
-        loadingEl.classList.add("hidden");
+        state.loading =
+            false;
+
+
+        loadingEl
+            .classList
+            .add(
+                "hidden"
+            );
+
     }
+
 }
 
 
+
 /* =========================================================
-   AKTUALIZACJA INCREMENTAL
+   AKTUALIZACJA
    ========================================================= */
 
 async function updateGames() {
 
-    /*
-        Nie uruchamiamy drugiego requestu,
-        jeśli poprzedni jeszcze trwa.
-    */
-    if (state.loading) {
-        return;
-    }
 
     /*
-        Pierwsze pobranie wykonujemy osobno.
+        Jeśli poprzedni request
+        nadal trwa — pomijamy.
     */
-    if (!state.initialized) {
+
+    if (
+        state.loading
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        Jeśli aplikacja
+        nie została jeszcze
+        zainicjalizowana.
+    */
+
+    if (
+        !state.initialized
+    ) {
+
         await initialLoad();
+
         return;
+
     }
 
-    state.loading = true;
+
+    state.loading =
+        true;
+
 
     try {
 
-        /*
-            Najważniejsza część optymalizacji.
-
-            Nie pobieramy ponownie całego dnia.
-
-            Pytamy Lichess tylko o partie,
-            które powstały po ostatniej znanej partii.
-
-            Odejmujemy 1 ms, żeby uniknąć problemu
-            na granicy timestampu.
-        */
-
-        const since = Math.max(
-            getTodayStart(),
-            state.lastGameTime + 1
-        );
-
-        const until = getNow();
 
         /*
-            Jeżeli nie ma jeszcze żadnej partii,
-            używamy początku dnia.
+            Pobieramy wyłącznie
+            nowe partie.
         */
+
+        const since =
+            Math.max(
+                getTodayStart(),
+                state.lastGameTime + 1
+            );
+
+
+        const until =
+            getNow();
+
+
         const effectiveSince =
             state.lastGameTime > 0
                 ? since
                 : getTodayStart();
 
+
         const url =
             "https://lichess.org/api/games/user/" +
-            encodeURIComponent(USERNAME) +
-            "?since=" + effectiveSince +
-            "&until=" + until +
+            encodeURIComponent(
+                USERNAME
+            ) +
+            "?since=" +
+            effectiveSince +
+            "&until=" +
+            until +
             "&max=100" +
             "&pgnInJson=true";
 
-        const games = await fetchGames(url);
 
-        let changedModes = new Set();
-
-        let newestGame = null;
-        let newestTime = 0;
-
-        for (const game of games) {
-
-            const mode = normalizeSpeed(
-                game.speed
+        const games =
+            await fetchGames(
+                url
             );
 
-            if (!mode) {
-                continue;
-            }
 
-            const added = addGame(game);
+        let newestGame =
+            null;
 
-            if (!added) {
-                continue;
-            }
 
-            changedModes.add(mode);
+        let newestTime =
+            0;
 
-            const gameTime = Number(
-                game.createdAt || 0
-            );
-
-            if (gameTime >= newestTime) {
-
-                newestTime = gameTime;
-                newestGame = game;
-            }
-        }
 
         /*
-            Jeżeli pojawiły się nowe partie,
-            automatycznie przechodzimy do trybu
-            najnowszej partii.
+            Sprawdzamy nowe partie.
         */
-        if (newestGame) {
 
-            const newestMode = normalizeSpeed(
-                newestGame.speed
-            );
+        for (
+            const game of games
+        ) {
 
-            if (newestMode) {
 
-                state.currentMode = newestMode;
+            const mode =
+                normalizeSpeed(
+                    game.speed
+                );
+
+
+            /*
+                Pomijamy inne
+                typy partii.
+            */
+
+            if (!mode) {
+
+                continue;
+
+            }
+
+
+            const added =
+                addGame(
+                    game
+                );
+
+
+            if (!added) {
+
+                continue;
+
+            }
+
+
+            const gameTime =
+                Number(
+                    game.createdAt ||
+                    0
+                );
+
+
+            /*
+                Szukamy najnowszej.
+            */
+
+            if (
+                gameTime >=
+                newestTime
+            ) {
+
+                newestTime =
+                    gameTime;
+
+
+                newestGame =
+                    game;
+
+            }
+
+        }
+
+
+        /*
+            Jeśli pojawiła się
+            nowa partia —
+            przełączamy tryb.
+        */
+
+        if (
+            newestGame
+        ) {
+
+
+            const newestMode =
+                normalizeSpeed(
+                    newestGame.speed
+                );
+
+
+            if (
+                newestMode
+            ) {
+
+
+                state.currentMode =
+                    newestMode;
+
 
                 updateModeButtons();
 
+
                 render();
 
+
                 /*
-                    Po kilku sekundach ponownie
-                    pokazujemy normalny widok.
+                    Po 6 sekundach
+                    ponownie renderujemy
+                    aktualny stan.
                 */
-                setTimeout(() => {
 
-                    render();
+                setTimeout(
+                    () => {
 
-                }, AUTO_SWITCH_DELAY);
+                        render();
+
+                    },
+                    AUTO_SWITCH_DELAY
+                );
+
             }
+
 
         } else {
 
+
             /*
-                Nic nowego nie przyszło.
-                Nie trzeba przebudowywać wszystkiego.
+                Nic nowego —
+                tylko odświeżamy widok.
             */
 
             render();
+
         }
 
-    } catch (error) {
+
+    } catch (
+        error
+    ) {
+
+
+        /*
+            Przy chwilowym błędzie
+            pozostawiamy poprzednie
+            poprawne dane.
+        */
 
         console.error(
             "Aktualizacja Lichess:",
             error
         );
 
-        /*
-            Nie chowamy poprzednich poprawnych danych
-            tylko dlatego, że pojedynczy refresh się nie udał.
-        */
 
     } finally {
 
-        state.loading = false;
+
+        state.loading =
+            false;
+
     }
+
 }
+
 
 
 /* =========================================================
@@ -920,116 +1888,227 @@ async function updateGames() {
 
 function render() {
 
-    const stats =
-        state.stats[state.currentMode];
 
-    const wins = stats.wins;
-    const draws = stats.draws;
-    const losses = stats.losses;
+    const stats =
+        state.stats[
+            state.currentMode
+        ];
+
+
+    const wins =
+        stats.wins;
+
+
+    const draws =
+        stats.draws;
+
+
+    const losses =
+        stats.losses;
+
 
     const total =
-        wins + draws + losses;
+        wins +
+        draws +
+        losses;
 
-    winsEl.textContent = wins;
-    drawsEl.textContent = draws;
-    lossesEl.textContent = losses;
 
-    recordEl.textContent =
-        `${wins}–${draws}–${losses}`;
+    /*
+        Liczby.
+    */
 
-    gameCountEl.textContent = total;
+    winsEl.textContent =
+        wins;
+
+
+    drawsEl.textContent =
+        draws;
+
+
+    lossesEl.textContent =
+        losses;
+
 
     /*
         Pasek wyników.
     */
 
-    if (total > 0) {
+    if (
+        total > 0
+    ) {
+
+
+        const winPercent =
+            (wins / total) * 100;
+
+
+        const drawPercent =
+            (draws / total) * 100;
+
+
+        const lossPercent =
+            (losses / total) * 100;
+
 
         winBar.style.width =
-            `${(wins / total) * 100}%`;
+            `${winPercent}%`;
+
 
         drawBar.style.width =
-            `${(draws / total) * 100}%`;
+            `${drawPercent}%`;
+
 
         lossBar.style.width =
-            `${(losses / total) * 100}%`;
+            `${lossPercent}%`;
+
 
     } else {
 
-        winBar.style.width = "0%";
-        drawBar.style.width = "0%";
-        lossBar.style.width = "0%";
+
+        winBar.style.width =
+            "0%";
+
+
+        drawBar.style.width =
+            "0%";
+
+
+        lossBar.style.width =
+            "0%";
+
     }
 
+
     /*
-        Bardzo ważne:
-
-        Nawet jeśli aktualny tryb ma 0 partii,
-        NIE chowamy całego widgetu.
-
-        Dzięki temu można normalnie przełączać
-        Bullet / Blitz / Rapid.
+        Pokazujemy widget.
     */
 
-    contentEl.classList.remove("hidden");
+    contentEl
+        .classList
+        .remove(
+            "hidden"
+        );
 
-    loadingEl.classList.add("hidden");
-    errorEl.classList.add("hidden");
+
+    loadingEl
+        .classList
+        .add(
+            "hidden"
+        );
+
+
+    errorEl
+        .classList
+        .add(
+            "hidden"
+        );
+
 
     updateModeButtons();
+
 }
 
 
+
 /* =========================================================
-   PRZYCISKI TRYBÓW
+   MODE BUTTONS
    ========================================================= */
 
 function updateModeButtons() {
 
-    modeButtons.forEach(button => {
 
-        const mode = button.dataset.mode;
+    modeButtons.forEach(
+        button => {
 
-        button.classList.toggle(
-            "active",
-            mode === state.currentMode
-        );
-    });
+
+            const mode =
+                button.dataset.mode;
+
+
+            button.classList.toggle(
+                "active",
+                mode ===
+                    state.currentMode
+            );
+
+        }
+    );
+
 }
 
 
-modeButtons.forEach(button => {
 
-    button.addEventListener("click", () => {
+/*
+    Ręczna zmiana trybu.
+*/
 
-        const mode =
-            button.dataset.mode;
+modeButtons.forEach(
+    button => {
 
-        if (!MODES.includes(mode)) {
-            return;
-        }
 
-        state.currentMode = mode;
+        button.addEventListener(
+            "click",
+            () => {
 
-        render();
-    });
-});
+
+                const mode =
+                    button.dataset.mode;
+
+
+                if (
+                    !MODES.includes(
+                        mode
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                state.currentMode =
+                    mode;
+
+
+                render();
+
+            }
+        );
+
+    }
+);
+
 
 
 /* =========================================================
-   BŁĄD
+   ERROR
    ========================================================= */
 
-function showError(message) {
+function showError() {
 
-    loadingEl.classList.add("hidden");
 
-    contentEl.classList.add("hidden");
+    loadingEl
+        .classList
+        .add(
+            "hidden"
+        );
 
-    errorEl.textContent = message;
 
-    errorEl.classList.remove("hidden");
+    contentEl
+        .classList
+        .add(
+            "hidden"
+        );
+
+
+    errorEl
+        .classList
+        .remove(
+            "hidden"
+        );
+
 }
+
 
 
 /* =========================================================
@@ -1039,19 +2118,23 @@ function showError(message) {
 initialLoad();
 
 
+
 /*
-    Automatyczna aktualizacja co 15 sekund.
-
-    Każdy request jest wykonywany dopiero po zakończeniu
-    poprzedniego dzięki state.loading.
+    Automatyczne odświeżanie
+    co 15 sekund.
 */
-setInterval(() => {
 
-    updateGames();
+setInterval(
+    () => {
 
-}, REFRESH_INTERVAL);
+        updateGames();
+
+    },
+    REFRESH_INTERVAL
+);
+
+
 </script>
 
 </body>
 </html>
-
